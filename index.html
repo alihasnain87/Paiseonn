@@ -130,102 +130,102 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
-<script>
-    // Initialize transactions array
-    let transactions = loadTransactions();
+    <script>
+        // Initialize transactions array
+        let transactions = loadTransactions();
 
-    function loadTransactions() {
-        const storedTransactions = localStorage.getItem('transactions');
-        return storedTransactions ? JSON.parse(storedTransactions) : [];
-    }
-
-    function saveTransactions() {
-        localStorage.setItem('transactions', JSON.stringify(transactions));
-    }
-
-    function addItem() {
-        const itemNameInput = document.getElementById('itemName');
-        const itemPriceInput = document.getElementById('itemPrice');
-
-        const itemName = itemNameInput.value.trim();
-        const itemPrice = parseFloat(itemPriceInput.value);
-
-        if (itemName === '' || isNaN(itemPrice)) {
-            alert('Please enter valid item details');
-            return;
+        function loadTransactions() {
+            const storedTransactions = localStorage.getItem('transactions');
+            return storedTransactions ? JSON.parse(storedTransactions) : [];
         }
 
-        const date = new Date().toLocaleDateString();
-        transactions.push({ itemName, itemPrice, date });
-        updateTransactionList();
-        updateTotalAmount();
-        itemNameInput.value = '';
-        itemPriceInput.value = '';
-
-        // Save transactions to local storage
-        saveTransactions();
-    }
-
-    function updateTransactionList() {
-        const transactionList = document.getElementById('transactionList');
-        transactionList.innerHTML = '';
-
-        for (let i = 0; i < transactions.length; i++) {
-            const listItem = document.createElement('li');
-            listItem.innerHTML = `<strong>${transactions[i].itemName}</strong>: Rs ${transactions[i].itemPrice} - ${transactions[i].date} 
-            <span class="delete-icon" onclick="deleteTransaction(${i})">&#10006;</span>`;
-            transactionList.appendChild(listItem);
+        function saveTransactions() {
+            localStorage.setItem('transactions', JSON.stringify(transactions));
         }
-    }
 
-    function updateTotalAmount() {
-        const totalAmountElement = document.getElementById('totalAmount');
-        const totalAmount = transactions.reduce((total, transaction) => total + transaction.itemPrice, 0);
-        totalAmountElement.textContent = totalAmount.toFixed(2);
-    }
+        function addItem() {
+            const itemNameInput = document.getElementById('itemName');
+            const itemPriceInput = document.getElementById('itemPrice');
 
-    function openModal() {
-        const modal = document.getElementById('modal');
-        modal.style.display = 'flex';
-    }
+            const itemName = itemNameInput.value.trim();
+            const itemPrice = parseFloat(itemPriceInput.value);
 
-    function closeModal() {
-        const modal = document.getElementById('modal');
-        modal.style.display = 'none';
-    }
+            if (itemName === '' || isNaN(itemPrice)) {
+                alert('Please enter valid item details');
+                return;
+            }
 
-    function clearAll() {
-        closeModal();
+            const date = new Date().toLocaleDateString();
+            transactions.push({ itemName, itemPrice, date });
+            updateTransactionList();
+            updateTotalAmount();
+            itemNameInput.value = '';
+            itemPriceInput.value = '';
 
-        // Clear all transactions only if the user clicked "Yes"
-        transactions = [];
+            // Save transactions to local storage
+            saveTransactions();
+        }
+
+        function updateTransactionList() {
+            const transactionList = document.getElementById('transactionList');
+            transactionList.innerHTML = '';
+
+            for (let i = 0; i < transactions.length; i++) {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `<strong>${transactions[i].itemName}</strong>: Rs ${transactions[i].itemPrice} - ${transactions[i].date} 
+                <span class="delete-icon" onclick="deleteTransaction(${i})">&#10006;</span>`;
+                transactionList.appendChild(listItem);
+            }
+        }
+
+        function updateTotalAmount() {
+            const totalAmountElement = document.getElementById('totalAmount');
+            const totalAmount = transactions.reduce((total, transaction) => total + transaction.itemPrice, 0);
+            totalAmountElement.textContent = totalAmount.toFixed(2);
+        }
+
+        function openModal() {
+            const modal = document.getElementById('modal');
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.style.display = 'none';
+        }
+
+        function clearAll() {
+            closeModal();
+
+            // Clear all transactions only if the user clicked "Yes"
+            transactions = [];
+            updateTransactionList();
+            updateTotalAmount();
+            localStorage.removeItem('transactions');
+        }
+
+        function deleteTransaction(index) {
+            transactions.splice(index, 1);
+            updateTransactionList();
+            updateTotalAmount();
+            saveTransactions();
+        }
+
+        function downloadExcel() {
+            const data = transactions.map(({ itemName, itemPrice, date }) => [itemName, itemPrice, date]);
+
+            const ws = XLSX.utils.aoa_to_sheet([['Item Name', 'Item Price', 'Date'], ...data]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+
+            // Save the file using XLSX.writeFile
+            XLSX.writeFile(wb, 'transactions.xlsx');
+        }
+
+        // Initial update on page load
         updateTransactionList();
         updateTotalAmount();
-        localStorage.removeItem('transactions');
-    }
-
-    function deleteTransaction(index) {
-        transactions.splice(index, 1);
-        updateTransactionList();
-        updateTotalAmount();
-        saveTransactions();
-    }
-
-    function downloadExcel() {
-        const data = transactions.map(({ itemName, itemPrice, date }) => [itemName, itemPrice, date]);
-
-        const ws = XLSX.utils.aoa_to_sheet([['Item Name', 'Item Price', 'Date'], ...data]);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
-
-        // Save the file using XLSX.writeFile
-        XLSX.writeFile(wb, 'transactions.xlsx');
-    }
-
-    // Initial update on page load
-    updateTransactionList();
-    updateTotalAmount();
-</script>
+    </script>
 
 </body>
 </html>
