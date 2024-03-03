@@ -15,7 +15,7 @@
             align-items: center;
             height: 100vh;
         }
-
+    
         #app {
             background-color: #fff;
             border-radius: 8px;
@@ -26,14 +26,14 @@
             text-align: center;
             margin: auto;
         }
-
+    
         #itemName,
         #itemPrice {
             width: 80%;
             padding: 8px;
             margin-bottom: 10px;
         }
-
+    
         #addItem,
         #clearAll,
         #downloadExcel {
@@ -44,31 +44,46 @@
             border-radius: 4px;
             cursor: pointer;
             margin-top: 10px;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, transform 0.2s;
         }
-
+    
         #addItem:hover,
         #clearAll:hover,
         #downloadExcel:hover {
             background-color: #2980b9;
+            transform: scale(1.05);
         }
-
+    
         #transactions {
             text-align: left;
             margin-top: 20px;
         }
-
+    
         #transactionList li {
             list-style-type: none;
             margin-bottom: 10px;
             border-bottom: 1px solid #ddd;
             padding-bottom: 5px;
+            opacity: 0;
+            transform: translateX(-10px);
+            animation: slideIn 0.5s ease-in-out forwards;
         }
-
+    
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    
         #totalAmount {
             font-weight: bold;
         }
-
+    
         /* Custom modal styles */
         #modal {
             display: none;
@@ -81,14 +96,25 @@
             justify-content: center;
             align-items: center;
         }
-
+    
         #modal-content {
             background-color: #31b10a;
             padding: 20px;
             border-radius: 8px;
             text-align: center;
+            animation: fadeIn 0.5s ease-in-out;
         }
-
+    
+        /* Fade-in animation for the modal */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    
         #modal-buttons button {
             margin: 0 10px;
             padding: 8px 16px;
@@ -96,12 +122,15 @@
             border: none;
             border-radius: 4px;
         }
+    
         .delete-icon {
             color: #ff0000;
             cursor: pointer;
             margin-left: 5px;
         }
     </style>
+    
+    
 </head>
 <body>
     <div id="app">
@@ -130,102 +159,116 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
-    <script>
-        // Initialize transactions array
-        let transactions = loadTransactions();
+<script>
+    // Initialize transactions array
+let transactions = loadTransactions();
 
-        function loadTransactions() {
-            const storedTransactions = localStorage.getItem('transactions');
-            return storedTransactions ? JSON.parse(storedTransactions) : [];
-        }
+function loadTransactions() {
+    const storedTransactions = localStorage.getItem('transactions');
+    return storedTransactions ? JSON.parse(storedTransactions) : [];
+}
 
-        function saveTransactions() {
-            localStorage.setItem('transactions', JSON.stringify(transactions));
-        }
+function saveTransactions() {
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+}
 
-        function addItem() {
-            const itemNameInput = document.getElementById('itemName');
-            const itemPriceInput = document.getElementById('itemPrice');
+function addItem() {
+    const itemNameInput = document.getElementById('itemName');
+    const itemPriceInput = document.getElementById('itemPrice');
 
-            const itemName = itemNameInput.value.trim();
-            const itemPrice = parseFloat(itemPriceInput.value);
+    const itemName = itemNameInput.value.trim();
+    const itemPrice = parseFloat(itemPriceInput.value);
 
-            if (itemName === '' || isNaN(itemPrice)) {
-                alert('Please enter valid item details');
-                return;
-            }
+    if (itemName === '' || isNaN(itemPrice)) {
+        alert('Please enter valid item details');
+        return;
+    }
 
-            const date = new Date().toLocaleDateString();
-            transactions.push({ itemName, itemPrice, date });
-            updateTransactionList();
-            updateTotalAmount();
-            itemNameInput.value = '';
-            itemPriceInput.value = '';
+    const date = new Date().toLocaleDateString();
 
-            // Save transactions to local storage
-            saveTransactions();
-        }
+    // Check if the item is already in transactions
+    const existingItemIndex = transactions.findIndex(item => item.itemName === itemName);
 
-        function updateTransactionList() {
-            const transactionList = document.getElementById('transactionList');
-            transactionList.innerHTML = '';
+    if (existingItemIndex !== -1) {
+        // If the item already exists, increment the count
+        transactions[existingItemIndex].count = (transactions[existingItemIndex].count || 1) + 1;
+    } else {
+        // If it's a new item, add it to transactions
+        transactions.push({ itemName, itemPrice, date, count: 1 });
+    }
 
-            for (let i = 0; i < transactions.length; i++) {
-                const listItem = document.createElement('li');
-                listItem.innerHTML = `<strong>${transactions[i].itemName}</strong>: Rs ${transactions[i].itemPrice} - ${transactions[i].date} 
-                <span class="delete-icon" onclick="deleteTransaction(${i})">&#10006;</span>`;
-                transactionList.appendChild(listItem);
-            }
-        }
+    updateTransactionList();
+    updateTotalAmount();
+    itemNameInput.value = '';
+    itemPriceInput.value = '';
 
-        function updateTotalAmount() {
-            const totalAmountElement = document.getElementById('totalAmount');
-            const totalAmount = transactions.reduce((total, transaction) => total + transaction.itemPrice, 0);
-            totalAmountElement.textContent = totalAmount.toFixed(2);
-        }
+    // Save transactions to local storage
+    saveTransactions();
+}
 
-        function openModal() {
-            const modal = document.getElementById('modal');
-            modal.style.display = 'flex';
-        }
+function updateTransactionList() {
+    const transactionList = document.getElementById('transactionList');
+    transactionList.innerHTML = '';
 
-        function closeModal() {
-            const modal = document.getElementById('modal');
-            modal.style.display = 'none';
-        }
+    for (let i = 0; i < transactions.length; i++) {
+        const listItem = document.createElement('li');
+        const itemText = transactions[i].count ? `${transactions[i].itemName} (x${transactions[i].count})` : transactions[i].itemName;
+        listItem.innerHTML = `<strong>${itemText}</strong>: Rs ${(transactions[i].itemPrice * (transactions[i].count || 1)).toFixed(2)} - ${transactions[i].date} 
+<span class="delete-icon" onclick="deleteTransaction(${i})">&#10006;</span>`;
 
-        function clearAll() {
-            closeModal();
+        transactionList.appendChild(listItem);
+    }
+}
 
-            // Clear all transactions only if the user clicked "Yes"
-            transactions = [];
-            updateTransactionList();
-            updateTotalAmount();
-            localStorage.removeItem('transactions');
-        }
+function updateTotalAmount() {
+    const totalAmountElement = document.getElementById('totalAmount');
+    const totalAmount = transactions.reduce((total, transaction) => total + transaction.itemPrice * (transaction.count || 1), 0);
+    totalAmountElement.textContent = totalAmount.toFixed(2);
+}
 
-        function deleteTransaction(index) {
-            transactions.splice(index, 1);
-            updateTransactionList();
-            updateTotalAmount();
-            saveTransactions();
-        }
+function openModal() {
+    const modal = document.getElementById('modal');
+    modal.style.display = 'flex';
+}
 
-        function downloadExcel() {
-            const data = transactions.map(({ itemName, itemPrice, date }) => [itemName, itemPrice, date]);
+function closeModal() {
+    const modal = document.getElementById('modal');
+    modal.style.display = 'none';
+}
 
-            const ws = XLSX.utils.aoa_to_sheet([['Item Name', 'Item Price', 'Date'], ...data]);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+function clearAll() {
+    closeModal();
 
-            // Save the file using XLSX.writeFile
-            XLSX.writeFile(wb, 'transactions.xlsx');
-        }
+    // Clear all transactions only if the user clicked "Yes"
+    transactions = [];
+    updateTransactionList();
+    updateTotalAmount();
+    localStorage.removeItem('transactions');
+}
 
-        // Initial update on page load
-        updateTransactionList();
-        updateTotalAmount();
-    </script>
+function deleteTransaction(index) {
+    transactions.splice(index, 1);
+    updateTransactionList();
+    updateTotalAmount();
+    saveTransactions();
+}
+
+function downloadExcel() {
+    const data = transactions.map(({ itemName, itemPrice, date, count }) => [itemName, itemPrice, date, count]);
+
+    const ws = XLSX.utils.aoa_to_sheet([['Item Name', 'Item Price', 'Date', 'Count'], ...data]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+
+    // Save the file using XLSX.writeFile
+    XLSX.writeFile(wb, 'transactions.xlsx');
+}
+
+// Initial update on page load
+updateTransactionList();
+updateTotalAmount();
+
+</script>
 
 </body>
 </html>
