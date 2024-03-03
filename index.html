@@ -4,17 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paiseon Ka Hisaab</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: Arial, sans-serif;
             background-color: #f4f4f4;
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh;
         }
 
         #app {
@@ -28,17 +27,16 @@
             margin: auto;
         }
 
-        input {
-            width: calc(100% - 16px);
+        #itemName,
+        #itemPrice {
+            width: 80%;
             padding: 8px;
             margin-bottom: 10px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 14px;
         }
 
-        button {
+        #addItem,
+        #clearAll,
+        #downloadExcel {
             background-color: #3498db;
             color: #fff;
             padding: 8px 16px;
@@ -49,7 +47,9 @@
             transition: background-color 0.3s;
         }
 
-        button:hover {
+        #addItem:hover,
+        #clearAll:hover,
+        #downloadExcel:hover {
             background-color: #2980b9;
         }
 
@@ -63,21 +63,10 @@
             margin-bottom: 10px;
             border-bottom: 1px solid #ddd;
             padding-bottom: 5px;
-            position: relative;
-        }
-
-        #transactionList li .delete-icon {
-            color: #ff0000;
-            cursor: pointer;
-            position: absolute;
-            top: 50%;
-            right: 10px;
-            transform: translateY(-50%);
         }
 
         #totalAmount {
             font-weight: bold;
-            font-size: 18px;
         }
 
         /* Custom modal styles */
@@ -106,13 +95,11 @@
             cursor: pointer;
             border: none;
             border-radius: 4px;
-            background-color: #3498db;
-            color: #fff;
-            transition: background-color 0.3s;
         }
-
-        #modal-buttons button:hover {
-            background-color: #2980b9;
+        .delete-icon {
+            color: #ff0000;
+            cursor: pointer;
+            margin-left: 5px;
         }
     </style>
 </head>
@@ -143,98 +130,102 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
-    <script>
-        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+<script>
+    // Initialize transactions array
+    let transactions = loadTransactions();
 
-        function addItem() {
-            const itemNameInput = document.getElementById('itemName');
-            const itemPriceInput = document.getElementById('itemPrice');
+    function loadTransactions() {
+        const storedTransactions = localStorage.getItem('transactions');
+        return storedTransactions ? JSON.parse(storedTransactions) : [];
+    }
 
-            const itemName = itemNameInput.value.trim();
-            const itemPrice = parseFloat(itemPriceInput.value);
+    function saveTransactions() {
+        localStorage.setItem('transactions', JSON.stringify(transactions));
+    }
 
-            if (itemName === '' || isNaN(itemPrice)) {
-                alert('Please enter valid item details');
-                return;
-            }
+    function addItem() {
+        const itemNameInput = document.getElementById('itemName');
+        const itemPriceInput = document.getElementById('itemPrice');
 
-            const date = new Date().toLocaleDateString();
-            transactions.push({ itemName, itemPrice, date });
-            updateTransactionList();
-            updateTotalAmount();
-            itemNameInput.value = '';
-            itemPriceInput.value = '';
+        const itemName = itemNameInput.value.trim();
+        const itemPrice = parseFloat(itemPriceInput.value);
 
-            // Save transactions to local storage
-            localStorage.setItem('transactions', JSON.stringify(transactions));
+        if (itemName === '' || isNaN(itemPrice)) {
+            alert('Please enter valid item details');
+            return;
         }
 
-        function updateTransactionList() {
-            const transactionList = document.getElementById('transactionList');
-            transactionList.innerHTML = '';
+        const date = new Date().toLocaleDateString();
+        transactions.push({ itemName, itemPrice, date });
+        updateTransactionList();
+        updateTotalAmount();
+        itemNameInput.value = '';
+        itemPriceInput.value = '';
 
-            for (let i = 0; i < transactions.length; i++) {
-                const listItem = document.createElement('li');
-                listItem.innerHTML = `<strong>${transactions[i].itemName}</strong>: ₹${transactions[i].itemPrice} - ${transactions[i].date}`;
-                transactionList.appendChild(listItem);
-            }
+        // Save transactions to local storage
+        saveTransactions();
+    }
+
+    function updateTransactionList() {
+        const transactionList = document.getElementById('transactionList');
+        transactionList.innerHTML = '';
+
+        for (let i = 0; i < transactions.length; i++) {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `<strong>${transactions[i].itemName}</strong>: ₹${transactions[i].itemPrice} - ${transactions[i].date} 
+            <span class="delete-icon" onclick="deleteTransaction(${i})">&#10006;</span>`;
+            transactionList.appendChild(listItem);
         }
+    }
 
-        function updateTotalAmount() {
-            const totalAmountElement = document.getElementById('totalAmount');
-            const totalAmount = transactions.reduce((total, transaction) => total + transaction.itemPrice, 0);
-            totalAmountElement.textContent = totalAmount.toFixed(2);
-        }
+    function updateTotalAmount() {
+        const totalAmountElement = document.getElementById('totalAmount');
+        const totalAmount = transactions.reduce((total, transaction) => total + transaction.itemPrice, 0);
+        totalAmountElement.textContent = totalAmount.toFixed(2);
+    }
 
-        function openModal() {
-            const modal = document.getElementById('modal');
-            modal.style.display = 'flex';
-        }
+    function openModal() {
+        const modal = document.getElementById('modal');
+        modal.style.display = 'flex';
+    }
 
-        function closeModal() {
-            const modal = document.getElementById('modal');
-            modal.style.display = 'none';
-        }
+    function closeModal() {
+        const modal = document.getElementById('modal');
+        modal.style.display = 'none';
+    }
 
-        function clearAll() {
-            closeModal();
+    function clearAll() {
+        closeModal();
 
-            // Clear all transactions only if the user clicked "Yes"
-            transactions = [];
-            updateTransactionList();
-            updateTotalAmount();
-            localStorage.removeItem('transactions');
-        }
+        // Clear all transactions only if the user clicked "Yes"
+        transactions = [];
+        updateTransactionList();
+        updateTotalAmount();
+        localStorage.removeItem('transactions');
+    }
 
-        function deleteTransaction(index) {
-            transactions.splice(index, 1);
-            updateTransactionList();
-            updateTotalAmount();
-            localStorage.setItem('transactions', JSON.stringify(transactions));
-        }
+    function deleteTransaction(index) {
+        transactions.splice(index, 1);
+        updateTransactionList();
+        updateTotalAmount();
+        saveTransactions();
+    }
 
-        function updateTransactionList() {
-            const transactionList = document.getElementById('transactionList');
-            transactionList.innerHTML = '';
+    function downloadExcel() {
+        const data = transactions.map(({ itemName, itemPrice, date }) => [itemName, itemPrice, date]);
 
-            for (let i = 0; i < transactions.length; i++) {
-                const listItem = document.createElement('li');
-                listItem.innerHTML = `<strong>${transactions[i].itemName}</strong>: ₹${transactions[i].itemPrice} - ${transactions[i].date} 
-                <span class="delete-icon" onclick="deleteTransaction(${i})">&#10006;</span>`;
-                transactionList.appendChild(listItem);
-            }
-        }
+        const ws = XLSX.utils.aoa_to_sheet([['Item Name', 'Item Price', 'Date'], ...data]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
 
-        function downloadExcel() {
-            const data = transactions.map(({ itemName, itemPrice, date }) => [itemName, itemPrice, date]);
+        // Save the file using XLSX.writeFile
+        XLSX.writeFile(wb, 'transactions.xlsx');
+    }
 
-            const ws = XLSX.utils.aoa_to_sheet([['Item Name', 'Item Price', 'Date'], ...data]);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+    // Initial update on page load
+    updateTransactionList();
+    updateTotalAmount();
+</script>
 
-            // Save the file using XLSX.writeFile
-            XLSX.writeFile(wb, 'transactions.xlsx');
-        }
-    </script>
 </body>
 </html>
