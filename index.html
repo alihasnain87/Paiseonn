@@ -161,7 +161,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
 <script>
     // Initialize transactions array
-// Initialize transactions array
 let transactions = loadTransactions();
 
 function loadTransactions() {
@@ -185,10 +184,19 @@ function addItem() {
         return;
     }
 
-    const date = new Date().toLocaleDateString();
+    // Use a consistent date format (YYYY-MM-DD)
+    const date = new Date().toISOString().split('T')[0];
 
-    // Add each occurrence of the same item as a new transaction
-    transactions.push({ itemName, itemPrice, date });
+    // Check if the item with the same name and date already exists
+    const existingItemIndex = transactions.findIndex(item => item.itemName === itemName && item.date === date);
+
+    if (existingItemIndex !== -1) {
+        // If the item already exists, increment the count
+        transactions[existingItemIndex].count = (transactions[existingItemIndex].count || 1) + 1;
+    } else {
+        // If it's a new item or a different date, add it to transactions
+        transactions.push({ itemName, itemPrice, date, count: 1 });
+    }
 
     updateTransactionList();
     updateTotalAmount();
@@ -199,21 +207,33 @@ function addItem() {
     saveTransactions();
 }
 
+
+    updateTransactionList();
+    updateTotalAmount();
+    itemNameInput.value = '';
+    itemPriceInput.value = '';
+
+    // Save transactions to local storage
+    saveTransactions();
+
+
 function updateTransactionList() {
     const transactionList = document.getElementById('transactionList');
     transactionList.innerHTML = '';
 
     for (let i = 0; i < transactions.length; i++) {
         const listItem = document.createElement('li');
-        listItem.innerHTML = `<strong>${transactions[i].itemName}</strong>: Rs ${transactions[i].itemPrice} - ${transactions[i].date} 
-        <span class="delete-icon" onclick="deleteTransaction(${i})">&#10006;</span>`;
+        const itemText = transactions[i].count ? `${transactions[i].itemName} (x${transactions[i].count})` : transactions[i].itemName;
+        listItem.innerHTML = `<strong>${itemText}</strong>: Rs ${(transactions[i].itemPrice * (transactions[i].count || 1)).toFixed(2)} - ${transactions[i].date} 
+<span class="delete-icon" onclick="deleteTransaction(${i})">&#10006;</span>`;
+
         transactionList.appendChild(listItem);
     }
 }
 
 function updateTotalAmount() {
     const totalAmountElement = document.getElementById('totalAmount');
-    const totalAmount = transactions.reduce((total, transaction) => total + transaction.itemPrice, 0);
+    const totalAmount = transactions.reduce((total, transaction) => total + transaction.itemPrice * (transaction.count || 1), 0);
     totalAmountElement.textContent = totalAmount.toFixed(2);
 }
 
@@ -245,9 +265,9 @@ function deleteTransaction(index) {
 }
 
 function downloadExcel() {
-    const data = transactions.map(({ itemName, itemPrice, date }) => [itemName, itemPrice, date]);
+    const data = transactions.map(({ itemName, itemPrice, date, count }) => [itemName, itemPrice, date, count]);
 
-    const ws = XLSX.utils.aoa_to_sheet([['Item Name', 'Item Price', 'Date'], ...data]);
+    const ws = XLSX.utils.aoa_to_sheet([['Item Name', 'Item Price', 'Date', 'Count'], ...data]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
 
@@ -258,7 +278,6 @@ function downloadExcel() {
 // Initial update on page load
 updateTransactionList();
 updateTotalAmount();
-
 
 </script>
 
