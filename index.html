@@ -161,125 +161,115 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
 <script>
     // Initialize transactions array
-let transactions = loadTransactions();
+    let transactions = loadTransactions();
 
-function loadTransactions() {
-    const storedTransactions = localStorage.getItem('transactions');
-    return storedTransactions ? JSON.parse(storedTransactions) : [];
-}
-
-function saveTransactions() {
-    localStorage.setItem('transactions', JSON.stringify(transactions));
-}
-
-function addItem() {
-    const itemNameInput = document.getElementById('itemName');
-    const itemPriceInput = document.getElementById('itemPrice');
-
-    const itemName = itemNameInput.value.trim();
-    const itemPrice = parseFloat(itemPriceInput.value);
-
-    if (itemName === '' || isNaN(itemPrice)) {
-        alert('Please enter valid item details');
-        return;
+    function loadTransactions() {
+        const storedTransactions = localStorage.getItem('transactions');
+        return storedTransactions ? JSON.parse(storedTransactions) : [];
     }
 
-    // Use a consistent date format (YYYY-MM-DD)
-    const date = new Date().toISOString().split('T')[0];
-
-    // Check if the item with the same name and date already exists
-    const existingItemIndex = transactions.findIndex(item => item.itemName === itemName && item.date === date);
-
-    if (existingItemIndex !== -1) {
-        // If the item already exists, increment the count
-        transactions[existingItemIndex].count = (transactions[existingItemIndex].count || 1) + 1;
-    } else {
-        // If it's a new item or a different date, add it to transactions
-        transactions.push({ itemName, itemPrice, date, count: 1 });
+    function saveTransactions() {
+        localStorage.setItem('transactions', JSON.stringify(transactions));
     }
 
-    updateTransactionList();
-    updateTotalAmount();
-    itemNameInput.value = '';
-    itemPriceInput.value = '';
+    function addItem() {
+        const itemNameInput = document.getElementById('itemName');
+        const itemPriceInput = document.getElementById('itemPrice');
 
-    // Save transactions to local storage
-    saveTransactions();
-}
+        const itemName = itemNameInput.value.trim();
+        const itemPrice = parseFloat(itemPriceInput.value);
 
+        if (itemName === '' || isNaN(itemPrice)) {
+            alert('Please enter valid item details');
+            return;
+        }
 
-    updateTransactionList();
-    updateTotalAmount();
-    itemNameInput.value = '';
-    itemPriceInput.value = '';
+        // Use a consistent date format (YYYY-MM-DD)
+        const date = new Date().toISOString().split('T')[0];
 
-    // Save transactions to local storage
-    saveTransactions();
+        // Check if the item with the same name and date already exists
+        const existingItemIndex = transactions.findIndex(item => item.itemName === itemName && item.date === date);
 
+        if (existingItemIndex !== -1) {
+            // If the item already exists, increment the count
+            transactions[existingItemIndex].count = (transactions[existingItemIndex].count || 1) + 1;
+        } else {
+            // If it's a new item or a different date, add it to transactions
+            transactions.push({ itemName, itemPrice, date, count: 1 });
+        }
 
-function updateTransactionList() {
-    const transactionList = document.getElementById('transactionList');
-    transactionList.innerHTML = '';
+        updateTransactionList();
+        updateTotalAmount();
+        itemNameInput.value = '';
+        itemPriceInput.value = '';
 
-    for (let i = 0; i < transactions.length; i++) {
-        const listItem = document.createElement('li');
-        const itemText = transactions[i].count ? `${transactions[i].itemName} (x${transactions[i].count})` : transactions[i].itemName;
-        listItem.innerHTML = `<strong>${itemText}</strong>: Rs ${(transactions[i].itemPrice * (transactions[i].count || 1)).toFixed(2)} - ${transactions[i].date} 
-<span class="delete-icon" onclick="deleteTransaction(${i})">&#10006;</span>`;
-
-        transactionList.appendChild(listItem);
+        // Save transactions to local storage
+        saveTransactions();
     }
-}
 
-function updateTotalAmount() {
-    const totalAmountElement = document.getElementById('totalAmount');
-    const totalAmount = transactions.reduce((total, transaction) => total + transaction.itemPrice * (transaction.count || 1), 0);
-    totalAmountElement.textContent = totalAmount.toFixed(2);
-}
+    function updateTransactionList() {
+        const transactionList = document.getElementById('transactionList');
+        transactionList.innerHTML = '';
 
-function openModal() {
-    const modal = document.getElementById('modal');
-    modal.style.display = 'flex';
-}
+        for (let i = 0; i < transactions.length; i++) {
+            const listItem = document.createElement('li');
+            const itemText = transactions[i].count ? `${transactions[i].itemName} (x${transactions[i].count})` : transactions[i].itemName;
+            listItem.innerHTML = `<strong>${itemText}</strong>: Rs ${(transactions[i].itemPrice * (transactions[i].count || 1)).toFixed(2)} - ${transactions[i].date} 
+            <span class="delete-icon" onclick="deleteTransaction(${i})">&#10006;</span>`;
 
-function closeModal() {
-    const modal = document.getElementById('modal');
-    modal.style.display = 'none';
-}
+            transactionList.appendChild(listItem);
+        }
+    }
 
-function clearAll() {
-    closeModal();
+    function updateTotalAmount() {
+        const totalAmountElement = document.getElementById('totalAmount');
+        const totalAmount = transactions.reduce((total, transaction) => total + transaction.itemPrice * (transaction.count || 1), 0);
+        totalAmountElement.textContent = totalAmount.toFixed(2);
+    }
 
-    // Clear all transactions only if the user clicked "Yes"
-    transactions = [];
+    function openModal() {
+        const modal = document.getElementById('modal');
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('modal');
+        modal.style.display = 'none';
+    }
+
+    function clearAll() {
+        closeModal();
+
+        // Clear all transactions only if the user clicked "Yes"
+        transactions = [];
+        updateTransactionList();
+        updateTotalAmount();
+        localStorage.removeItem('transactions');
+    }
+
+    function deleteTransaction(index) {
+        transactions.splice(index, 1);
+        updateTransactionList();
+        updateTotalAmount();
+        saveTransactions();
+    }
+
+    function downloadExcel() {
+        const data = transactions.map(({ itemName, itemPrice, date, count }) => [itemName, itemPrice, date, count]);
+
+        const ws = XLSX.utils.aoa_to_sheet([['Item Name', 'Item Price', 'Date', 'Count'], ...data]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+
+        // Save the file using XLSX.writeFile
+        XLSX.writeFile(wb, 'transactions.xlsx');
+    }
+
+    // Initial update on page load
     updateTransactionList();
     updateTotalAmount();
-    localStorage.removeItem('transactions');
-}
-
-function deleteTransaction(index) {
-    transactions.splice(index, 1);
-    updateTransactionList();
-    updateTotalAmount();
-    saveTransactions();
-}
-
-function downloadExcel() {
-    const data = transactions.map(({ itemName, itemPrice, date, count }) => [itemName, itemPrice, date, count]);
-
-    const ws = XLSX.utils.aoa_to_sheet([['Item Name', 'Item Price', 'Date', 'Count'], ...data]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
-
-    // Save the file using XLSX.writeFile
-    XLSX.writeFile(wb, 'transactions.xlsx');
-}
-
-// Initial update on page load
-updateTransactionList();
-updateTotalAmount();
-
 </script>
+
 
 </body>
 </html>
